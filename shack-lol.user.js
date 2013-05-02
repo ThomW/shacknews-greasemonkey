@@ -165,6 +165,8 @@
 		* [ugh] tag is new soul-sucker with threshhold to set the cutoff
 	2012-11-11
 		* Fixed script to work sans Greasemonkey collapse script
+	2013-05-01
+		* Adjusted script for new Shacknews login markup
 */
 
 (function() {
@@ -199,10 +201,10 @@
 	function findUsername()
 	{
 		try {
-			return stripHtml(getElementByClassName(document.getElementById('user'), 'li', 'user').firstChild.innerHTML);
+			return stripHtml(document.getElementById("user_posts").innerHTML);
 		}
 		catch(err) {
-			return '';	
+			return '';
 		}
 	}
 

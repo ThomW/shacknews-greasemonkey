@@ -26,6 +26,8 @@
       * Fixed chatty search order 
 	2011-12-12
 		* greg-m added a dumb link to the username and broke everything.  good job, greg-m.
+	2012-05-01
+		* greg-m is screwing things up again. thx again, greg-m.
 */
 (function() {
 
@@ -77,7 +79,12 @@
 	
 	function findUsername()
 	{
-		return stripHtml(getElementByClassName(document.getElementById('user'), 'li', 'user').firstChild.innerHTML);
+		try {
+			return stripHtml(document.getElementById("user_posts").innerHTML);
+		}
+		catch(err) {
+			return '';
+		}
 	}
 	
 	function createTextWrapper(tag, text,url)
@@ -420,7 +427,7 @@
 		}
 		
 		// User name clicked
-		else if ((t.tagName == 'A') && (p.className == 'user light') && (ppp.tagName == 'DIV') && (ppp.id == 'user'))
+		else if ((t.tagName == 'A') && (t.id == 'user_posts'))
 		{
 			e.preventDefault();
 			e.stopPropagation();
