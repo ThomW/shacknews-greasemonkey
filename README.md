@@ -3,7 +3,7 @@ shacknews-greasemonkey
 
 A collection of Greasemonkey scripts written to ... enhance(?) your Shacknews viewing pleasure
 
-** NOTE: I have no illusions about this code.  It's a mess. Most of it was built up over the ages, with adjustments made as-needed because of the shifting sands of the very early Greasemonkey extension releases and no one (well, I really only have myself to blame) has gone through to add any kind of order to the chaos.
+*NOTE: I have no illusions about this code.  It's a mess. Most of it was built up over the ages, with adjustments made as-needed because of the shifting sands of the very early Greasemonkey extension releases and no one (well, I really only have myself to blame) has gone through to add any kind of order to the chaos.*
 
 # Essential Scripts
 
