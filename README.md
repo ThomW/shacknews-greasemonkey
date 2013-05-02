@@ -19,6 +19,9 @@ Adds a Shacktag menu to the comment posting box. You can click a tag and enter t
 **Message This User**
 Adds links to Shackmessage people to the comments next to post authors' names just like in the old days.
 
+**User Popup**
+Adds a dropdown menu to usernames on the site to make it easy to search their posts, or their contributions to the [lol] hall of shame.
+
 # Goofy Scripts
 
 **Gegtik's Dinosaur Comics**
