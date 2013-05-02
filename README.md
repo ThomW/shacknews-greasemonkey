@@ -19,7 +19,7 @@ Adds a Shacktag menu to the comment posting box. You can click a tag and enter t
 **Message This User** [[install](https://github.com/ThomW/shacknews-greasemonkey/raw/master/shack-msgthisuser.user.js)]  
 Adds links to Shackmessage people to the comments next to post authors' names just like in the old days.
 
-**User Popup** [[install](https://github.com/ThomW/shacknews-greasemonkey/raw/master/shack-msgthisuser.user.js)]  
+**User Popup** [[install](https://github.com/ThomW/shacknews-greasemonkey/raw/master/shacknews_user_popup.user.js)]  
 Adds a dropdown menu to usernames on the site to make it easy to search their posts, or their contributions to the [lol] hall of shame.
 
 # Goofy Scripts
