@@ -29,3 +29,8 @@ This script is awesome. It turns all of gegtik's posts into totally sweet [Dinos
 
 **Sparkly Comics** [[install](https://github.com/ThomW/shacknews-greasemonkey/raw/master/sparkly_comics.user.js)]  
 This works just like Gegtik's Dinosaur Comics, but uses that strip of pictures Sparkly posted of himself. The script looks at the text in the post and makes a half-assed attempt at making it show the appropriate image.
+
+# Shacknews-related Scripts
+
+**Twitter/Shackname Translator** [[install](https://github.com/ThomW/shacknews-greasemonkey/raw/master/shack-twitter-translate.user.js)]  
+Based off arhughes' Google+ Shackname Translator, this script shows Shacknames next to Twitter users' names on twitter.com. Names are pulled from http://shackers.gamewith.us/finder/twitter .
