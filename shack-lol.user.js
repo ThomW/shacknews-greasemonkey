@@ -972,7 +972,7 @@
 
 			for (var node of mutation.addedNodes)
 			{
-				if (node.classList.contains('fullpost'))
+				if (node.classList.contains('fullpost') || node.classList.contains('root'))
 				{
 					installLolButtons();
 					return;
