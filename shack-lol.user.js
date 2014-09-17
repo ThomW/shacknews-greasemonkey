@@ -2,18 +2,17 @@
 // @name Shack-lol
 // @namespace http://www.lmnopc.com/greasemonkey/
 // @description Adds [lol] links to posts
-// @include http://shacknews.com/*
-// @include http://www.shacknews.com/*
-// @exclude http://www.shacknews.com/frame_chatty.x*
-// @exclude http://bananas.shacknews.com/*
-// @exclude http://*.gmodules.com/*
-// @exclude http://*.facebook.com/*
+// @include /https?://shacknews.com/*/
+// @include /https?://www.shacknews.com/*/
+// @exclude /https?://www.shacknews.com/frame_chatty.x*/
+// @exclude /https?://bananas.shacknews.com/*/
+// @exclude /https?://*.gmodules.com/*/
+// @exclude /https?://*.facebook.com/*/
+// @version 1.5
 // @grant GM_addStyle
 // @grant GM_getValue
 // @grant GM_setValue
-// @grant GM_log
 // @grant GM_xmlhttpRequest
-// @grant unsafeWindow
 // ==/UserScript==
 /*
 	------------------------------------------------------------
@@ -119,36 +118,36 @@
 	2008-12-05
 		* Fixed it so inf'd posts are * I N F ' D * instead of showing up as * L O L ' D *
 	2008-12-06
-      * Shacklol page : Posts can now be inf'd and lol'd instead of just lol'd
-   2009-02-03
-   	* Removed script stuff from lmnopc.com/greasemonkey/shacklol/ since that is done in the page now
-   2009-08-26
+		* Shacklol page : Posts can now be inf'd and lol'd instead of just lol'd
+	2009-02-03
+   		* Removed script stuff from lmnopc.com/greasemonkey/shacklol/ since that is done in the page now
+	2009-08-26
 		* Added some new tags, and gave people a way to select which tags they wanted to see and use
 	2011-02-20
-		* Updated to work with NuShack 		   	
+		* Updated to work with NuShack
 	2011-02-23
 		* Converted username at the top of the page to a pseudo-vanity search link (not tested on weird usernames)
-	2011-03-27 
+	2011-03-27
 		* Finally rewrote this thing to take advantage of DOMNodeInserted.  Finally staying in the sandbox.
 		* lol buttons are now being added to stories outside of the Chatty proper
-		* Fixed stupid design flaw and made users' own names links as they should have been.   
+		* Fixed stupid design flaw and made users' own names links as they should have been.
 		* WinChatty is still dead.  Went back to using default Shack search page to reduce amount of scrolling and clicking required to get accurate results
 		* Removed dead sites from list of included sites
-	2011-03-28	
-		* Set styling on lol buttons to keep them from going bold and changed style declarations to use !important to reduce problems with Stylish overrides		
+	2011-03-28
+		* Set styling on lol buttons to keep them from going bold and changed style declarations to use !important to reduce problems with Stylish overrides
 	2011-03-28b
-		* Changed Username link to a dropdown menu for doing a bunch of types of searches	
+		* Changed Username link to a dropdown menu for doing a bunch of types of searches
 	2011-03-28c
-		* Fixed bug in findUsername	
+		* Fixed bug in findUsername
 	2011-03-31
-		* Username dropdown menus on post authors  
+		* Username dropdown menus on post authors
 		* lolCount indicators
 	2011-03-31c
 		* Assorted bug fixes - fixed major 4.1 issue
 	2011-04-07
 		* Updated to work now that own username is a link
 	2011-04-15
-		* Stripped out popup stuff into its own script 
+		* Stripped out popup stuff into its own script
 	2011-04-19
 		* Made lol count display toggleable through Greasemonkey user script menu (ghetto)
 	2011-04-22
@@ -167,23 +166,28 @@
 		* Fixed script to work sans Greasemonkey collapse script
 	2013-05-01
 		* Adjusted script for new Shacknews login markup
+	2014-09-17
+		* Fixed https usage
+		* Fixed pills not updating
+		* Fixed MutationObserver deprecation warning
+		* Added the ability to get lolers
+		* Fixed ugh collapsing for large amounts of ughs
+		* Removed use of unsafeWindow
 */
 
 (function() {
 
 	var myDomain = 'lmnopc.com';
 	var version = 20121101;
-	
+
 	var lolCounts = new Array();
 
 	// grab start time of script
 	var benchmarkTimer = null;
 	var scriptStartTime = getTime();
 
-	function tw_log(str) { GM_log(str); }
 	function getTime() { benchmarkTimer = new Date(); return benchmarkTimer.getTime(); }
 	function stripHtml(html) { return String(html).replace(/(<([^>]+)>)/ig, ''); }
-	function trim(str) { return String(str).replace(/^\s+|\s+$/g,""); }
 
 	// Setup lolcount settings and get default value
 	var lolCountSettingOptions = new Array('All','Limited','None');
@@ -196,8 +200,8 @@
 	var username = findUsername();
 
 	// Add CSS for supporting the lol script
-	GM_addStyle('.oneline_tags { display: inline; overflow: hidden; white-space: nowrap; } .oneline_tags span { margin: 0 2px 0 2px; padding: 0 2px; border-radius: 3px; background-color: #f8f; color: #000; font-size: 10px; font-weight: bold; } .oneline_tags .oneline_lol { background-color: #f80; } .oneline_tags .oneline_inf { background-color: #09c; } .oneline_tags .oneline_unf { background-color: #f00; } .oneline_tags .oneline_tag { background-color: #7b2; } .oneline_tags .oneline_wtf { background-color: #c000c0; } .april1 { display: inline-block ; background-image: url(data:image/gif;base64,R0lGODlhVwEUAPcAAAAAAAAANTQAADgAODMzNAAAXQAAYRY4dDE3SjA5Vi47ZAhqLgtsXwtkaDJFe0A%2FB0E%2FK2Q%2FBkE%2FSEBBRVlZWXJnTGZmZnNzcxU9kxhDvRBathhkhxlymB1kuht6oyxDkjJKkzpYmCpHqTlYqTtZuCZtjCpwkDl4lCZpvClwtg5d0wBc4hNB7hpJ8AJ06yZLxC5SwilU2zJZySJO5ChV6CdX8TphxDx4xD971D5l6zNm8zxw9FxZmFxZuEB%2FnHxZmHxZuGVuimdwinlwkGV4pEZrx0N%2BxVx0yEN06EV69FR79GJ%2B0QCLLgCJNgCSNwOaQgeMYBSrSS%2BKdyKyTEGCe0maYmWsZx6HtCSNuiyRvA2G9yKXyTWFyzuO1zacykGDgEKDlEqHo0SUtlqRrFeZtVCziGWDqWyDs2GVrWudtnOFuGSjmmihuXiluUqCyEaexFCGyV6Qylme3k2D9Umq1FyjwlWu1Vul5Vmo8WSUz2qc0XqLxXGc0mKI9WqQ93ua92uuymO12XurwXik1Xu1xXi82n2n%2BHzA9YQ%2FBqheALNMMqZhBKR%2BCr99Mp9fcaJHQ90dFtU0JOI6JP1TNf9kPulNSY56hP8A%2F7iRAKaBOYiRXZOwXovCdafTSsODBtCINv%2B8LO6KfeKhW%2FixY%2F7OB%2F%2FeP%2F%2FgLsrMYf3FTPbcZvDfefz6fY2NjY2Pk52KkJmZmYeRrpqgsbWOmLiVo6esu7WoqLOzs4ar3Yi0yI2z25%2BnzJuq1Zu4ype43oeu4IWm%2BJSp5pu54KOw2rqhybW7yrC%2B26K%2F4qO4%2BYXBsqXdsoDC4ozB%2B4zV%2BJnX9abF1bfG2LXXyLvQ3qTL5K7F%2B7TK5bLF%2B73U5qfr66709LXu9b%2F%2F%2F8OAle2fl8L6rcT8tOjHgvbTiuzAuObih%2BjkkfHtmPj0jPn1l%2FHuvfv5qP77ss3NzczP1dHXyNfX18XM4svX6c3a%2BtHe7srg7s3j8NXm79no89%2F%2F7ezXyOzu1%2FLvwP%2F%2F2%2Bjo6Ort9Ory%2BP%2F%2F7fz8%2FSH5BAEAAJcALAAAAABXARQAAAj%2BAC%2FVe0ewoMGDCBMqPMjvksOHEFlInEixosWLGDNOhAjxlcePIEOKHEnyFceT8qSpXMmypcuXMGO6lHfyIb95OHPq3MmzZ86aQC%2FlGyeuqNGjSMflq0ltkJ6nUKNKnUq1atVB1ATG48e1q9evYMOK%2FboVKAtDaNOqXcu2rdu3aVnUfPWvrt27ePPq1WsyqLx5ewMLHkz43zyaJ%2Fn1K8zYbr%2BGQSHmI4cuneXLmDOjI7cUIjVpixuLJtxPGrV3Y1OrXs3vnVkcc2LLnk27tu3buOfgkHuS7ujRfYFK%2B01ctLSagIsPnhcZ4rjM0KOnG8dxUGjl2P%2F1G4Satffvrmv%2BssCRpHz5OYaWHcLTJbb59%2FDjy5%2B%2Fe252wsFrDr%2FP3%2B7xk8n1dxdzzTkkjnQIWiYOR3oIqJwe3XV1wIQUVjjhd6qFd9J4781xiBZauCDiCnEg8R5e08ynInz19eYgX5Ht9yJ2%2F3EU4IsEFnhgZuYs8sADX0i3IEQNzjgahF%2BFoOSSTCqJYWoacsTheYaAGKILK4yhyikmlvePLRZYwMo%2FwKxoZosc%2BcbYJwAAgEdj%2BZ0k417O4EKPkXvVCNGNDubY3I6YefLjj0FCN%2BRDReLJGJJeNakkEcUU4%2BRY9xxRD2tRRoTDDpwO48iVWIaRiimkaMLpDv%2B8YoMNRfzTyg7%2B8PyyQx%2Fw9PELPLjCA2uusnKK5kNqFgbOAMyMEgAzjMXJEWj9NOtMs9CK4UEY0PbjTBjYYstLtdx226089HSr50N8CuaPKyloU5ifkQFqWSoRSODNKojIayiD3lKjwb4a3PBOs2704u3A3PpCMKNdORpCXZKG0FWll%2FJTKTuWYvraqdxMMkuIK6SQCikgY3LqP%2Fvg%2BpgEqMaygx%2F%2FEOFHLLRoN8IusbTzDyyn%2FnqJbwR3%2B4kB2IAjAB49V6ssRMw2SwgHbETTTyFYXOEBGdDKg0sbG6SBizVF9xxGGuICWO5e%2BgxhQrrrFmhgZqgAaZknECRzL5H5agBHLrd00EH%2BPP3cYo12XRfsi8HeIsyVwv%2FosuTDFTMecYav6SB5KJFQMosKHZTRSSkgMyK5Dv%2BoE0ssxPyjBuiv6MCyEDqAwDcFIcigxpcEfP6rmt8lYsA1QnPh3dEPJd0sFh54AIgXW2xxBQf1zNPsP%2Fxs8M4%2FvAjSrA9cPzNGP7yc4MOz%2FUQTxgltWFtCCWGEC%2B24ODFWtglnq0sYu0G5m07ba7z9ADLRHXqJHnXLRV2CoQHruCEY%2FeiF3gbhBq4NQgMoYCC3buELCt6icBE6HJPMcJdJSaxxE7NUOEbQjHvwIAQk%2FEqmHjKez20jEpKYhCXKMAUncCIVoKjA51IFgh62Yx3%2BqNNBH%2F4RBB1U4x8WcIAOlPCPdRBABrbjDbDqso8qWvGKWExEAa7xDQFwAYtgtCLwHCK8fsgjC1fAQvK2QDwObKtZ9NiA05xRAmtlrR9jQAMdneGMDTxDHhvghTXIR48ThAF869vT2Mi2B3ugS37LUdsl7Ic%2F%2FfGvf4gKILTs9g8N5KIfHWjgDTRgDWsUkBod0ADg%2Bja4Vl6QW4bjR5POUDp3wMKDEONKCNnRg2zgAwjZ%2BODjWvOaGhgzB5WAhCKsEAUnNKEJm8hEDIxZgy%2F1oQ9%2F6IctYNCPdtCKiMf4UhD6oIRmXWAJSqCmznZGsjCGsRFb7OId3AnGMV6ijPX%2BCMQa15gFMuACWnF0Wj%2FkOIYwlKAeJXiGD9AQDfGNoQ0nsEY02lDHr4XNIe0bzbnQNj9JUtJt6YCb3ITkED2ERRqefAw%2FOOlJff3NpbdQZd9U2ZW6VNAXdQFLLBHnjsXpEoRHYAcPSBBMEy6JqF5ZoUPGQ80a5OARVXgCE57phAW8oKl4ecYEYrCHZgmDiPC4CzDu8g4aGHOdO6MnGOUpigAoQ61XtCez5FEtOuxzC4Xg1jzk2KwxpGEDCE1DHX1wAjSgIQ3OoKhh02A9i3JLTxltzEYhKRj6AUUc6MhsZuElgW7Qq7OarcxlDqWHepj2tPUwRkrrQcBbdDIX%2BqL%2BRj8IaI2Y9qMefFAlauvRyt2edqeO%2BsczfCrMn1KsFl0obliUegmmNlUKTWDCE6DQAAzMoKk1%2BAABtksABIigBjNQAAESoAAFvIC7BCgveq9aA7S%2Boh3wja9859uORrRJDvTNL3zl2qx6kIEQ0igE8taIhXpwC5AC7aMP%2BvFXsAniBAbmBT2isYG%2FPcNp2FJfIhUpmsmmTW2YDS06BDUoKohYs%2F4rrW9VC4db8EFvBk4pCjqQN1K%2BQwNGyK1uUTu4W%2FjWtDs9g5CH%2FA93CNlhP41YCOshizvg4weHEAtzx9OCKtMADE1gQAZmMIMqe%2FnLYA6zmMfcAvfq98xo1q%2F%2BXE172zpc4a5v%2BJdvSyAPNpeAF%2FWwhvQMjIYNbMAHdOWFn0sQjXr0cQN1Pu24LhFZwni4oyA%2BcTl89AATnxgd%2Fvvfj1XLrxvE4x%2F1SCk14hCHmFqDH8GAgx4eCGrUUtAXP65HkIcs5CIf%2BWEnDAEJoBFUSz35DkYNwQ2GOWUckPnYyE72l82c5manec2nNWMh7GCHQIAm1to5bbYXc9t61GUxbNbOtuuy20UzWrKP%2FLCOLs3u0GZaD%2FSIt7zjzQ%2B81CPe%2F4iHET75QNYa4dRuQME%2F5n2nuhBc3sBVGHGfBJZiK%2FvhEF%2B2FDuyjopb%2FOIYz7jGNQ5t1FYr1iAPucj%2By40cPFm2JuIwh8pXzvKWs%2Fzd8Yi5zGdO85kPIpUoMEa%2B87AvI0yv5kCXeSwZTnRiigcHSE%2B60pfO9KY7%2FelJnziw1EH1qlv96ljPetY7PvKue13k5l7kfU5%2BkpS7%2FOwth3nQ1x7zepM75qG5LdtrPvSiP4m5zdWI3vfOd6kDqySAD7xIYvT1whue5AAyuSTHUQ60O74c1IEId%2BZO%2Bcqz%2FR2D4MdW7E70skjy86APvehHXyB5WOPgqE%2B96lfPemsghiOKmdFjJDmUctj%2B9rjPve3HcQ6OUKMXrpeH8IdP%2FOIb%2F%2FjIP741epGV1izk%2BdB%2FPmRIT%2F3qW%2F%2F6DpEHL7Yrz%2F3ue%2F%2F74A%2B%2F%2BL%2F%2F%2BsT45Pzo1wnoz0EUpLjfKLxnilOsQv%2F623%2FVWQkIAAA7); width:343px; height:20px; margin-top: -3px;  cursor: pointer; } .lolTag { margin: 0.5em 0; } .lolTag input { width: 3em; } #lol_tags label input { margin: 0 1em 0 0.5em; } #saveLolTags { display: block; margin: 1em 0; } #shacklol-settings .form-field { margin: 0.75em 0 1em 0; } #shacklol-settings fieldset { border: 1px solid #0099FF; padding: 5px 10px; } #shacklol-settings fieldset legend { padding: 0 10px; } ');
-	
+	GM_addStyle('.oneline_tags { display: inline; overflow: hidden; white-space: nowrap; } .oneline_tags span { margin: 0 2px 0 2px; padding: 0 2px; border-radius: 3px; background-color: #f8f; color: #000; font-size: 10px; font-weight: bold; } .oneline_tags .oneline_lol { background-color: #f80; } .oneline_tags .oneline_inf { background-color: #09c; } .oneline_tags .oneline_unf { background-color: #f00; } .oneline_tags .oneline_tag { background-color: #7b2; } .oneline_tags .oneline_wtf { background-color: #c000c0; } .oneline_tags .oneline_ugh { background-color: #080; } .april1 { display: inline-block ; background-image: url(data:image/gif;base64,R0lGODlhVwEUAPcAAAAAAAAANTQAADgAODMzNAAAXQAAYRY4dDE3SjA5Vi47ZAhqLgtsXwtkaDJFe0A%2FB0E%2FK2Q%2FBkE%2FSEBBRVlZWXJnTGZmZnNzcxU9kxhDvRBathhkhxlymB1kuht6oyxDkjJKkzpYmCpHqTlYqTtZuCZtjCpwkDl4lCZpvClwtg5d0wBc4hNB7hpJ8AJ06yZLxC5SwilU2zJZySJO5ChV6CdX8TphxDx4xD971D5l6zNm8zxw9FxZmFxZuEB%2FnHxZmHxZuGVuimdwinlwkGV4pEZrx0N%2BxVx0yEN06EV69FR79GJ%2B0QCLLgCJNgCSNwOaQgeMYBSrSS%2BKdyKyTEGCe0maYmWsZx6HtCSNuiyRvA2G9yKXyTWFyzuO1zacykGDgEKDlEqHo0SUtlqRrFeZtVCziGWDqWyDs2GVrWudtnOFuGSjmmihuXiluUqCyEaexFCGyV6Qylme3k2D9Umq1FyjwlWu1Vul5Vmo8WSUz2qc0XqLxXGc0mKI9WqQ93ua92uuymO12XurwXik1Xu1xXi82n2n%2BHzA9YQ%2FBqheALNMMqZhBKR%2BCr99Mp9fcaJHQ90dFtU0JOI6JP1TNf9kPulNSY56hP8A%2F7iRAKaBOYiRXZOwXovCdafTSsODBtCINv%2B8LO6KfeKhW%2FixY%2F7OB%2F%2FeP%2F%2FgLsrMYf3FTPbcZvDfefz6fY2NjY2Pk52KkJmZmYeRrpqgsbWOmLiVo6esu7WoqLOzs4ar3Yi0yI2z25%2BnzJuq1Zu4ype43oeu4IWm%2BJSp5pu54KOw2rqhybW7yrC%2B26K%2F4qO4%2BYXBsqXdsoDC4ozB%2B4zV%2BJnX9abF1bfG2LXXyLvQ3qTL5K7F%2B7TK5bLF%2B73U5qfr66709LXu9b%2F%2F%2F8OAle2fl8L6rcT8tOjHgvbTiuzAuObih%2BjkkfHtmPj0jPn1l%2FHuvfv5qP77ss3NzczP1dHXyNfX18XM4svX6c3a%2BtHe7srg7s3j8NXm79no89%2F%2F7ezXyOzu1%2FLvwP%2F%2F2%2Bjo6Ort9Ory%2BP%2F%2F7fz8%2FSH5BAEAAJcALAAAAABXARQAAAj%2BAC%2FVe0ewoMGDCBMqPMjvksOHEFlInEixosWLGDNOhAjxlcePIEOKHEnyFceT8qSpXMmypcuXMGO6lHfyIb95OHPq3MmzZ86aQC%2FlGyeuqNGjSMflq0ltkJ6nUKNKnUq1atVB1ATG48e1q9evYMOK%2FboVKAtDaNOqXcu2rdu3aVnUfPWvrt27ePPq1WsyqLx5ewMLHkz43zyaJ%2Fn1K8zYbr%2BGQSHmI4cuneXLmDOjI7cUIjVpixuLJtxPGrV3Y1OrXs3vnVkcc2LLnk27tu3buOfgkHuS7ujRfYFK%2B01ctLSagIsPnhcZ4rjM0KOnG8dxUGjl2P%2F1G4Satffvrmv%2BssCRpHz5OYaWHcLTJbb59%2FDjy5%2B%2Fe252wsFrDr%2FP3%2B7xk8n1dxdzzTkkjnQIWiYOR3oIqJwe3XV1wIQUVjjhd6qFd9J4781xiBZauCDiCnEg8R5e08ynInz19eYgX5Ht9yJ2%2F3EU4IsEFnhgZuYs8sADX0i3IEQNzjgahF%2BFoOSSTCqJYWoacsTheYaAGKILK4yhyikmlvePLRZYwMo%2FwKxoZosc%2BcbYJwAAgEdj%2BZ0k417O4EKPkXvVCNGNDubY3I6YefLjj0FCN%2BRDReLJGJJeNakkEcUU4%2BRY9xxRD2tRRoTDDpwO48iVWIaRiimkaMLpDv%2B8YoMNRfzTyg7%2B8PyyQx%2Fw9PELPLjCA2uusnKK5kNqFgbOAMyMEgAzjMXJEWj9NOtMs9CK4UEY0PbjTBjYYstLtdx226089HSr50N8CuaPKyloU5ifkQFqWSoRSODNKojIayiD3lKjwb4a3PBOs2704u3A3PpCMKNdORpCXZKG0FWll%2FJTKTuWYvraqdxMMkuIK6SQCikgY3LqP%2Fvg%2BpgEqMaygx%2F%2FEOFHLLRoN8IusbTzDyyn%2FnqJbwR3%2B4kB2IAjAB49V6ssRMw2SwgHbETTTyFYXOEBGdDKg0sbG6SBizVF9xxGGuICWO5e%2BgxhQrrrFmhgZqgAaZknECRzL5H5agBHLrd00EH%2BPP3cYo12XRfsi8HeIsyVwv%2FosuTDFTMecYav6SB5KJFQMosKHZTRSSkgMyK5Dv%2BoE0ssxPyjBuiv6MCyEDqAwDcFIcigxpcEfP6rmt8lYsA1QnPh3dEPJd0sFh54AIgXW2xxBQf1zNPsP%2Fxs8M4%2FvAjSrA9cPzNGP7yc4MOz%2FUQTxgltWFtCCWGEC%2B24ODFWtglnq0sYu0G5m07ba7z9ADLRHXqJHnXLRV2CoQHruCEY%2FeiF3gbhBq4NQgMoYCC3buELCt6icBE6HJPMcJdJSaxxE7NUOEbQjHvwIAQk%2FEqmHjKez20jEpKYhCXKMAUncCIVoKjA51IFgh62Yx3%2BqNNBH%2F4RBB1U4x8WcIAOlPCPdRBABrbjDbDqso8qWvGKWExEAa7xDQFwAYtgtCLwHCK8fsgjC1fAQvK2QDwObKtZ9NiA05xRAmtlrR9jQAMdneGMDTxDHhvghTXIR48ThAF869vT2Mi2B3ugS37LUdsl7Ic%2F%2FfGvf4gKILTs9g8N5KIfHWjgDTRgDWsUkBod0ADg%2Bja4Vl6QW4bjR5POUDp3wMKDEONKCNnRg2zgAwjZ%2BODjWvOaGhgzB5WAhCKsEAUnNKEJm8hEDIxZgy%2F1oQ9%2F6IctYNCPdtCKiMf4UhD6oIRmXWAJSqCmznZGsjCGsRFb7OId3AnGMV6ijPX%2BCMQa15gFMuACWnF0Wj%2FkOIYwlKAeJXiGD9AQDfGNoQ0nsEY02lDHr4XNIe0bzbnQNj9JUtJt6YCb3ITkED2ERRqefAw%2FOOlJff3NpbdQZd9U2ZW6VNAXdQFLLBHnjsXpEoRHYAcPSBBMEy6JqF5ZoUPGQ80a5OARVXgCE57phAW8oKl4ecYEYrCHZgmDiPC4CzDu8g4aGHOdO6MnGOUpigAoQ61XtCez5FEtOuxzC4Xg1jzk2KwxpGEDCE1DHX1wAjSgIQ3OoKhh02A9i3JLTxltzEYhKRj6AUUc6MhsZuElgW7Qq7OarcxlDqWHepj2tPUwRkrrQcBbdDIX%2BqL%2BRj8IaI2Y9qMefFAlauvRyt2edqeO%2BsczfCrMn1KsFl0obliUegmmNlUKTWDCE6DQAAzMoKk1%2BAABtksABIigBjNQAAESoAAFvIC7BCgveq9aA7S%2Boh3wja9859uORrRJDvTNL3zl2qx6kIEQ0igE8taIhXpwC5AC7aMP%2BvFXsAniBAbmBT2isYG%2FPcNp2FJfIhUpmsmmTW2YDS06BDUoKohYs%2F4rrW9VC4db8EFvBk4pCjqQN1K%2BQwNGyK1uUTu4W%2FjWtDs9g5CH%2FA93CNlhP41YCOshizvg4weHEAtzx9OCKtMADE1gQAZmMIMqe%2FnLYA6zmMfcAvfq98xo1q%2F%2BXE172zpc4a5v%2BJdvSyAPNpeAF%2FWwhvQMjIYNbMAHdOWFn0sQjXr0cQN1Pu24LhFZwni4oyA%2BcTl89AATnxgd%2Fvvfj1XLrxvE4x%2F1SCk14hCHmFqDH8GAgx4eCGrUUtAXP65HkIcs5CIf%2BWEnDAEJoBFUSz35DkYNwQ2GOWUckPnYyE72l82c5manec2nNWMh7GCHQIAm1to5bbYXc9t61GUxbNbOtuuy20UzWrKP%2FLCOLs3u0GZaD%2FSIt7zjzQ%2B81CPe%2F4iHET75QNYa4dRuQME%2F5n2nuhBc3sBVGHGfBJZiK%2FvhEF%2B2FDuyjopb%2FOIYz7jGNQ5t1FYr1iAPucj%2By40cPFm2JuIwh8pXzvKWs%2Fzd8Yi5zGdO85kPIpUoMEa%2B87AvI0yv5kCXeSwZTnRiigcHSE%2B60pfO9KY7%2FelJnziw1EH1qlv96ljPetY7PvKue13k5l7kfU5%2BkpS7%2FOwth3nQ1x7zepM75qG5LdtrPvSiP4m5zdWI3vfOd6kDqySAD7xIYvT1whue5AAyuSTHUQ60O74c1IEId%2BZO%2Bcqz%2FR2D4MdW7E70skjy86APvehHXyB5WOPgqE%2B96lfPemsghiOKmdFjJDmUctj%2B9rjPve3HcQ6OUKMXrpeH8IdP%2FOIb%2F%2FjIP741epGV1izk%2BdB%2FPmRIT%2F3qW%2F%2F6DpEHL7Yrz%2F3ue%2F%2F74A%2B%2F%2BL%2F%2F%2BsT45Pzo1wnoz0EUpLjfKLxnilOsQv%2F623%2FVWQkIAAA7); width:343px; height:20px; margin-top: -3px;  cursor: pointer; } .lolTag { margin: 0.5em 0; } .lolTag input { width: 3em; } #lol_tags label input { margin: 0 1em 0 0.5em; } #saveLolTags { display: block; margin: 1em 0; } #shacklol-settings .form-field { margin: 0.75em 0 1em 0; } #shacklol-settings fieldset { border: 1px solid #0099FF; padding: 5px 10px; } #shacklol-settings fieldset legend { padding: 0 10px; } ');
+
 	function findUsername()
 	{
 		try {
@@ -224,33 +228,37 @@
 		}
 		catch (ex)
 		{
-			return null; 
+			return null;
 		}
 	}
-	
+
 	function createButton(tag, id, color)
 	{
 		var button = document.createElement("a");
 		button.id = tag + id;
 		button.href = "#";
 		button.className = "lol_button";
-		// button.style.color = color;
 		button.setAttribute('style', 'color: ' + color + ' !important; font-weight: normal; padding: 0 0.25em; text-decoration: underline;');
 		button.appendChild(document.createTextNode(tag));
-		
+
 		button.addEventListener("click", function(e)
 		{
-			lolThread(tag, id);
+			if (tag == "lolers") {
+				showLolers(id);
+			}
+			else {
+				lolThread(tag, id);
+			}
 			e.preventDefault();
 		}, false);
-		
+
 		var span = document.createElement("span");
 		span.appendChild(document.createTextNode("["));
 		span.appendChild(button);
 		span.appendChild(document.createTextNode("]"));
 		span.style.padding = '0 0.125em';
-		
-		return span;	
+
+		return span;
 	}
 
 	// shackLol functions
@@ -258,64 +266,62 @@
 	{
 		var dbg = false;
 
-		var startTime = getTime();
-
-		var msg = '';
-
 		threadIdList = String(threadIdList).split(',');
 
-		for (var i = 0, ii = threadIdList.length; i < ii; i++)
+		for (var i = 0; i < threadIdList.length; i++)
 		{
 			var threadId = threadIdList[i];
-			
-			// Don't add #lol_ if it already exists 
-			if (document.getElementById('lol_' + threadId) !== null) 
+
+			// Don't add #lol_ if it already exists
+			if (document.getElementById('lol_' + threadId) !== null)
 			{
+				displayLolCounts(threadId);
 				continue;
 			}
 
 			// find threadId
-			var t = document.getElementById('item_' + threadId);
-			if (!t)
+			var thread = document.getElementById('item_' + threadId);
+			if (!thread)
 			{
-				if (dbg) { tw_log('COULD NOT FIND item_' + threadId); }
-				return false;
+				if (dbg) { console.log('COULD NOT FIND item_' + threadId); }
+				continue;
 			}
 
 			// find div.postmeta
-			var spanAuthor = getElementByClassName(t, 'span', 'author');
+			var spanAuthor = getElementByClassName(thread, 'span', 'author');
 			if (!spanAuthor)
 			{
-				if (dbg) { tw_log('getElementsByClassName could not locate span.author'); }
-				return false;
+				if (dbg) { console.log('getElementsByClassName could not locate span.author'); }
+				continue;
 			}
-			
+
 			var divLol = document.createElement('div');
 			divLol.setAttribute('style', 'display: inline; float: none; padding-left: 10px; font-size: 14px;');
 			divLol.setAttribute('id', 'lol_' + threadId);
 
 			// Add tags to the post
 			for (var idx = 0; idx < tags.length; idx++) {
-				divLol.appendChild(createButton(tags[idx].name, threadId, tags[idx].color));	
+				divLol.appendChild(createButton(tags[idx].name, threadId, tags[idx].color));
 			}
-			
+			divLol.appendChild(createButton("lolers", threadId, "#999999"));
+
 			// add d to spanAuthor
 			spanAuthor.appendChild(divLol);
-			
-			// Update the lol counts for this post 
+
+			// Update the lol counts for this post
 			displayLolCounts(threadId);
 		}
 	}
-	
+
 	function getModeration(threadId)
 	{
 		var modTags = new Array('fpmod_offtopic', 'fpmod_nws', 'fpmod_stupid', 'fpmod_informative', 'fpmod_political');
 
 		var liItem = document.getElementById('item_' + threadId);
-		
-		var className = liItem.getElementsByTagName('div')[0].className; 
-		className = className.split(' '); 
-		
+
+		var className = liItem.getElementsByTagName('div')[0].className;
+		className = className.split(' ');
+
 		for (var i = 0, ii = modTags.length; i < ii; i++)
 		{
 			for (var j = 0, jj = className.length; j < jj; j++)
@@ -326,14 +332,14 @@
 				}
 			}
 		}
-		
-		return ''; 
+
+		return '';
 	}
 
 	function lolThread(tag, id)
 	{
-		var moderation = ''; 
-		
+		var moderation = '';
+
 		if (tag == null) { tag = 'lol'; }
 
 		// find the user
@@ -343,79 +349,177 @@
 			return;
 		}
 
-		// Scrape the post's current moderation from the page (this is only done on Shacknews.com obviously) 
-		moderation = getModeration(id); 
+		// Scrape the post's current moderation from the page (this is only done on Shacknews.com obviously)
+		moderation = getModeration(id);
 		if (moderation.length)
 		{
-			moderation = '&moderation=' + encodeURIComponent(moderation); 
-		} 
-		
-		//
+			moderation = '&moderation=' + encodeURIComponent(moderation);
+		}
+
 		var addr = 'http://' + myDomain + '/greasemonkey/shacklol/report.php?who=' + encodeURIComponent(username) + '&what=' + encodeURIComponent(id) + '&tag=' + encodeURIComponent(tag) + '&version=' + encodeURIComponent(version) + moderation;
 
-		GM_log(addr);
-		
+		console.log(addr);
+
 		// use xmlhttpRequest to post the data
-	  	GM_xmlhttpRequest({ 
+		GM_xmlhttpRequest({
 			method:"GET",
-	  		url: addr,
+			url: addr,
 			onload: function(result) {
-		    	
-		     	try
-		     	{
-		     		if (result.responseText.substr(0, 3) != 'ok ')
-		     		{
-		     			if (String(result.responseText).length)
-		     			{
-		     				tw_log(result.responseText);
-		     				alert(result.responseText);
-		     			}
-		     			else
-		     			{
-		     				alert("Your +" + tag + " may have failed.  Sorry.  :(");
-		     			}
-		     		}
-		     		else
-	     			{
-	     				var taggd = '*';
-	     				for (i = 0; i < tag.length; i++)
-	     				{
-	     					taggd += ' ' + tag[i].toUpperCase() + ' '; 
-	     				}
-	     				taggd += ' \' D *';
-	     				
-	     				var objLol = document.getElementById(result.responseText.substr(3));
-	     				objLol.setAttribute('onclick', '');
-	     				objLol.innerHTML = '<a href="http://' + myDomain + '/greasemonkey/shacklol/?user=' + encodeURIComponent(username) + '" style="color: #f00;">' + taggd + '</a>';
-		     		}
-			      }
-			      catch (e)
-			      {
-			      	alert('+' + tag + ' failed');
-			      }
-			    }
-	  		});
+
+				try
+				{
+					if (result.responseText.substr(0, 3) != 'ok ')
+					{
+						if (String(result.responseText).length)
+						{
+							console.log(result.responseText);
+							alert(result.responseText);
+						}
+						else
+						{
+							alert("Your +" + tag + " may have failed.  Sorry.  :(");
+						}
+					}
+					else
+					{
+						var taggd = '*';
+						for (i = 0; i < tag.length; i++)
+						{
+							taggd += ' ' + tag[i].toUpperCase() + ' ';
+						}
+						taggd += ' \' D *';
+
+						var objLol = document.getElementById(result.responseText.substr(3));
+						objLol.setAttribute('onclick', '');
+						objLol.innerHTML = '<a href="http://' + myDomain + '/greasemonkey/shacklol/?user=' + encodeURIComponent(username) + '" style="color: #f00;">' + taggd + '</a>';
+					}
+				}
+				catch (e)
+				{
+					alert('+' + tag + ' failed');
+				}
+			}
+		});
 	}
-	
+
+	function requestLolers(tag_name, id)
+	{
+		var addr = 'http://' + myDomain + '/greasemonkey/shacklol/api.php?thread_id=' + encodeURIComponent(id) + '&tag=' + tag_name + '&special=get_taggers';
+
+		GM_xmlhttpRequest({
+			method:"GET",
+			url: addr,
+			onload: function(result) {
+				try {
+					var jsonObj = JSON.parse(result.responseText);
+					for (var hate in jsonObj) {
+						for (var tagger = 0; tagger < jsonObj[hate].length; tagger++) {
+							// add the button
+							spanOnelineTag = document.createElement('span');
+							spanOnelineTag.id = 'taggers_' + tag_name + '_' + id + '_' + jsonObj[hate][tagger];
+							spanOnelineTag.className = 'oneline_' + tag_name;
+							spanOnelineTag.style.display = 'inline-block';
+							spanOnelineTag.style.lineHeight = '1.25em';
+							spanOnelineTag.appendChild(document.createTextNode(jsonObj[hate][tagger]));
+
+							divTagType = document.getElementById('taggers_' + tag_name + '_' + id);
+							divTagType.appendChild(spanOnelineTag);
+						}
+					}
+				}
+				catch (error)
+				{
+					console.log(error);
+					alert('Error parsing lolcount.');
+				}
+			}
+		});
+	}
+
+	function showLolers(id)
+	{
+		var thread = document.getElementById('item_' + id);
+		if (!thread)
+		{
+			if (dbg) { console.log('COULD NOT FIND item_' + threadId); }
+			return;
+		}
+
+		// find bottom of post
+		var post = getElementByClassName(thread, 'div', 'fullpost');
+		if (!post)
+		{
+			if (dbg) { console.log('getElementsByClassName could not locate div.fullpost'); }
+			return;
+		}
+
+		var postbody = getElementByClassName(post, 'div', 'postbody');
+		if (!postbody)
+		{
+			if (dbg) { console.log('getElementsByClassName could not locate div.postbody'); }
+			return;
+		}
+
+		divTaggers = document.getElementById('taggers_' + id);
+		if (divTaggers)
+		{
+			for (var i = 0; i < divTaggers.childNodes.length; i++) {
+				while (divTaggers.childNodes[i].hasChildNodes()) {
+					divTaggers.childNodes[i].removeChild(divTaggers.childNodes[i].lastChild);
+				}
+			}
+		}
+		else {
+			divTaggers = document.createElement('div');
+			divTaggers.id = 'taggers_' + id;
+			divTaggers.className = 'oneline_tags';
+			divTaggers.style.paddingTop = '15px';
+			divTaggers.style.marginLeft = '22px';
+			post.insertBefore(divTaggers, postbody.nextSibling);
+
+			for (var tag in tags)
+			{
+				var tag_name = tags[tag].name;
+				divTagType = document.createElement('div');
+				divTagType.id = 'taggers_' + tag_name + '_' + id;
+				divTagType.className = 'online_tags';
+				divTagType.style.marginLeft = '22px';
+				divTagType.style.whiteSpace = 'normal';
+				divTaggers.appendChild(divTagType);
+			}
+		}
+
+		for (var tag in tags)
+		{
+			var tag_name = tags[tag].name;
+			requestLolers(tag_name, id);
+		}
+	}
+
 	function displayLolCounts(threadId)
 	{
-		var rootId = -1; 
-	
-		// Make sure this is a rootId 
+		// Make sure lolCounts are enabled
+		if (lolCountSetting == 'None') {
+			return;
+		}
+
+		var rootId = -1;
+
+		// Make sure this is a rootId
 		if (document.getElementById('root_' + threadId))
 		{
-			rootId = threadId; 
+			rootId = threadId;
 		}
 		else
 		{
 			// If this is a subthread, the root needs to be found
-			var liItem = document.getElementById('item_' + threadId); 
+			var liItem = document.getElementById('item_' + threadId);
 			if (liItem)
 			{
-				do 
+				do
 				{
-					liItem = liItem.parentNode; 
-					
+					liItem = liItem.parentNode;
+
 					if (liItem.className == 'root')
 					{
 						rootId = liItem.id.split('_')[1];
@@ -425,11 +529,11 @@
 				while (liItem.parentNode != null)
 			}
 		}
-		
+
 		if (rootId == -1)
 		{
-			GM_log('Could not find root for ' + threadId); 
-			return; 
+			console.log('Could not find root for ' + threadId);
+			return;
 		}
 
 		// Create flat list of lol tags to make it easy comparisons in the loop
@@ -438,90 +542,84 @@
 			tag_names.push(tags[i].name);
 		}
 
-		// Make sure lolCounts are enabled  
-		if (lolCountSetting != 'None')
+		// If there aren't any tagged threads in this root there's no need to proceed
+		if (!lolCounts[rootId])
 		{
-			// If there aren't any tagged threads in this root there's no need to proceed 
-			if (!lolCounts[rootId])
+			return;
+		}
+
+		// Update all the ids under the rootId we're in
+		for (id in lolCounts[rootId])
+		{
+			for (tag in lolCounts[rootId][id])
 			{
-				return; 
-			}
-		
-			// Update all the ids under the rootId we're in 
-			for (id in lolCounts[rootId])
-			{	
-				for (tag in lolCounts[rootId][id])
+				// Make sure tag is in user's list in limited mode
+				if ((lolCountSetting == 'Limited') && (tag_names.indexOf(tag) == -1)) {
+					continue;
+				}
+
+				// If collapse ugs is enabled, see if we're in a root post and collapse if it's over the threshhold
+				var postUghCount = parseInt(lolCounts[rootId][id][tag]);
+				var userUghLimit = parseInt(lolCollapseUghs);
+				if ((userUghLimit != 0) && (id == rootId) && (tag == 'ugh') && (postUghCount >= userUghLimit))
 				{
-					// Make sure tag is in user's list in limited mode
-					if ((lolCountSetting == 'Limited') && (tag_names.indexOf(tag) == -1)) {
+					location.assign("javascript:close_post(" + rootId + ");void 0");
+				}
+
+				// Add * x indicators in the fullpost
+				var tgt = document.getElementById(tag + id);
+				if (tgt)
+				{
+					tgt.innerHTML = tag + ' &times; ' + lolCounts[rootId][id][tag];
+				}
+
+				// Add (lol * 3) indicators to the onelines
+				if (!document.getElementById('oneline_' + tag + 's_' + id))
+				{
+					tgt = document.getElementById('item_' + id);
+					if (tgt)
+					{
+						tgt = getElementByClassName(tgt, 'div', 'oneline');
+						if (tgt)
+						{
+							divOnelineTags = document.createElement('div');
+							divOnelineTags.id = 'oneline_' + tag + 's_' + id;
+							divOnelineTags.className = 'oneline_tags';
+							tgt.appendChild(divOnelineTags);
+
+							// add the button
+							spanOnelineTag = document.createElement('span');
+							spanOnelineTag.id = 'oneline_' + tag + '_' + id;
+							spanOnelineTag.className = 'oneline_' + tag;
+							spanOnelineTag.appendChild(document.createTextNode(tag + ' * ' + lolCounts[rootId][id][tag]));
+							divOnelineTags.appendChild(spanOnelineTag);
+						}
+					}
+				}
+				else
+				{
+					var online = document.getElementById('oneline_' + tag + '_' + id);
+					if (!online)
+					{
+						console.log("Couldn't find oneline_" + tag + '_' + id + ' even though it should have existed.')
 						continue;
 					}
 
-					// If collapse ugs is enabled, see if we're in a root post and collapse if it's over the threshhold
-					if ((lolCollapseUghs != 0) && (id == rootId) && (tag == 'ugh') && (lolCounts[rootId][id][tag] >= lolCollapseUghs)) {
-
-						// Use the Shack's default close_post in case the Shack Collapse script isn't installed/hasn't run
-						if (typeof(unsafeWindow.shackcollapse_close_post) != 'undefined') {
-							unsafeWindow.shackcollapse_close_post(rootId);	
-						} else if (typeof(unsafeWindow.close_post) != 'undefined') {
-							unsafeWindow.close_post(rootId);
-						}
-					}
-
-					// Add * x indicators in the fullpost 
-					var tgt = document.getElementById(tag + id);
-					if (tgt)
-					{
-						if (tgt.innerHTML.indexOf(' × ') == -1)
-						{
-							tgt.innerHTML += ' &times; ' + lolCounts[rootId][id][tag];
-						}
-					}
-					else
-					{
-						GM_log(tag + id + ' not found');
-					}
-				
-					// Add (lol * 3) indicators to the onelines
-					if (!document.getElementById('oneline_' + tag + 's_' + id))
-					{
-						tgt = document.getElementById('item_' + id);
-						if (tgt)
-						{
-							tgt = getElementByClassName(tgt, 'div', 'oneline');
-							if (tgt) 
-							{
-								divOnelineTags = document.createElement('div'); 
-								divOnelineTags.id = 'oneline_' + tag + 's_' + id;
-								divOnelineTags.className = 'oneline_tags'; 
-								tgt.appendChild(divOnelineTags);
-								
-								 // add the button 
-								spanOnelineTag = document.createElement('span'); 
-								spanOnelineTag.id = 'oneline_' + tag + '_' + id;
-								spanOnelineTag.className = 'oneline_' + tag;  
-								spanOnelineTag.appendChild(document.createTextNode(tag + ' * ' + lolCounts[rootId][id][tag])); 
-								divOnelineTags.appendChild(spanOnelineTag); 
-							}
-						}
-					}
+					online.innerHTML = tag + ' * ' + lolCounts[rootId][id][tag];
 				}
 			}
 		}
 	}
-	
+
 	function retrieveLolCounts()
 	{
-	  	GM_xmlhttpRequest({ 
-			method: 'GET', 
-	  		url: 'http://lmnopc.com/greasemonkey/shacklol/api.php?special=getcounts', 
+		GM_xmlhttpRequest({
+			method: 'GET',
+			url: 'http://lmnopc.com/greasemonkey/shacklol/api.php?special=getcounts',
 			onload: function(responseDetails) {
-			
-				GM_log('retrieving lol counts');
-			
 				GM_setValue('lol-counts', responseDetails.responseText);
 				GM_setValue('lol-counts-time', String(new Date().getTime()));  // must be stored as String -- doesn't fit in 32-bit int
-				
+
 				// Update module-level variable that holds the lolCounts
 				lolCounts = JSON.parse(responseDetails.responseText);
 
@@ -531,34 +629,29 @@
 				{
 					displayLolCounts(threadIdList[i]);
 				}
-			}, 
+			},
 			onerror: function(responseDetails) {
 				alert(responseDetails);
 			}
 		});
 	}
-	
+
 	function installApril1Button(threadIdList)
 	{
-		
-		// 
+		//
 		// IF YOU SEE THIS CODE, KEEP YOUR GODDAMN MOUTH SHUT - DON'T RUIN THIS FOR ME!  XOXO THOM
 		//
-	
+
 		var dbg = false;
-
-		var startTime = getTime();
-
-		var msg = '';
 
 		threadIdList = String(threadIdList).split(',');
 
 		for (var i = 0, ii = threadIdList.length; i < ii; i++)
 		{
 			var threadId = threadIdList[i];
-			
-			// Don't add #lol_ if it already exists 
-			if (document.getElementById('lol_' + threadId) !== null) 
+
+			// Don't add #lol_ if it already exists
+			if (document.getElementById('lol_' + threadId) !== null)
 			{
 				continue;
 			}
@@ -567,7 +660,7 @@
 			var t = document.getElementById('item_' + threadId);
 			if (!t)
 			{
-				if (dbg) { tw_log('COULD NOT FIND item_' + threadId); }
+				if (dbg) { console.log('COULD NOT FIND item_' + threadId); }
 				return false;
 			}
 
@@ -575,22 +668,22 @@
 			var spanAuthor = getElementByClassName(t, 'span', 'author');
 			if (!spanAuthor)
 			{
-				if (dbg) { tw_log('getElementsByClassName could not locate span.author'); }
+				if (dbg) { console.log('getElementsByClassName could not locate span.author'); }
 				return false;
 			}
-			
+
 			var divLol = document.createElement('div');
 			divLol.className = 'april1';
-			divLol.id = 'lol_' + threadId;  
+			divLol.id = 'lol_' + threadId;
 			divLol.addEventListener('click', function() {
-			    var audioElement = document.createElement('audio');
-			    audioElement.setAttribute('src', 'http://gamewith.us/shackspace/sadtuba.ogg');
-			    audioElement.play();
-			    alert('APRIL FOOLS!');
+				var audioElement = document.createElement('audio');
+				audioElement.setAttribute('src', 'http://gamewith.us/shackspace/sadtuba.ogg');
+				audioElement.play();
+				alert('APRIL FOOLS!');
 			}, false);
-			
+
 			spanAuthor.appendChild(divLol);
-		} 
+		}
 	}
 
 
@@ -607,8 +700,8 @@
 		}
 		return idList;
 	}
-	
-	
+
+
 	function installLolButtons() {
 		if (document.getElementById('4pr1lf00z')) {
 			installApril1Button(getIdList());
@@ -619,8 +712,8 @@
 
 	function removeLolTag(node)
 	{
-	    var tag_row = node.parentNode;
-	    tag_row.parentNode.removeChild(tag_row);
+		var tag_row = node.parentNode;
+		tag_row.parentNode.removeChild(tag_row);
 	}
 
 	function addLolTag(name, color)
@@ -632,60 +725,60 @@
 			color = '';
 		}
 
-        var tag_row = document.createElement("div");
-        tag_row.setAttribute('class','lolTag');
+		var tag_row = document.createElement("div");
+		tag_row.setAttribute('class','lolTag');
 
-        var l = document.createElement('label');
-        l.appendChild(document.createTextNode('Tag: '));
-        var input = document.createElement('input');
-        input.setAttribute('class','name');
-        input.setAttribute('value', name);
-        l.appendChild(input);
-        tag_row.appendChild(l);
+		var l = document.createElement('label');
+		l.appendChild(document.createTextNode('Tag: '));
+		var input = document.createElement('input');
+		input.setAttribute('class','name');
+		input.setAttribute('value', name);
+		l.appendChild(input);
+		tag_row.appendChild(l);
 
-        var l = document.createElement('label');
-        l.appendChild(document.createTextNode('Color: '));
-        var input = document.createElement('input');
-        input.setAttribute('class','color');
-        input.setAttribute('value', color);
-        l.appendChild(input);
-        tag_row.appendChild(l);
+		var l = document.createElement('label');
+		l.appendChild(document.createTextNode('Color: '));
+		var input = document.createElement('input');
+		input.setAttribute('class','color');
+		input.setAttribute('value', color);
+		l.appendChild(input);
+		tag_row.appendChild(l);
 
-        var a = document.createElement('a');
-        a.setAttribute('href','#');
-        a.setAttribute('class','remove');
-        a.appendChild(document.createTextNode('(remove)'));
-        a.addEventListener('click', function(e) {
-        	e.preventDefault();
-        	removeLolTag(this);
-        });
-        tag_row.appendChild(a);
+		var a = document.createElement('a');
+		a.setAttribute('href','#');
+		a.setAttribute('class','remove');
+		a.appendChild(document.createTextNode('(remove)'));
+		a.addEventListener('click', function(e) {
+			e.preventDefault();
+			removeLolTag(this);
+		});
+		tag_row.appendChild(a);
 
-	    var lol_div = document.getElementById("lol_tags");
-	    lol_div.appendChild(tag_row);
+		var lol_div = document.getElementById("lol_tags");
+		lol_div.appendChild(tag_row);
 	}
 
 	function getDescendentByTagAndClassName(parent, tag, class_name)
 	{
-	    var descendents = parent.getElementsByTagName(tag);
-	    for (var i = 0; i < descendents.length; i++)
-	    {
-	        if (descendents[i].className.indexOf(class_name) == 0)
-	            return descendents[i];
-	    }
+		var descendents = parent.getElementsByTagName(tag);
+		for (var i = 0; i < descendents.length; i++)
+		{
+			if (descendents[i].className.indexOf(class_name) == 0)
+				return descendents[i];
+		}
 	}
 
 	function saveLolTags()
 	{
-	    var tags = [];
-	    var lol_div = document.getElementById("lol_tags");
-	    for (var i = 0; i < lol_div.children.length; i++)
-	    {
-	        var tag_name = getDescendentByTagAndClassName(lol_div.children[i], "input", "name").value;
-	        var tag_color = getDescendentByTagAndClassName(lol_div.children[i], "input", "color").value;
-	        tags[i] = {name: tag_name, color: tag_color};
-	    }
-	    GM_setValue('lolTags', JSON.stringify(tags));
+		var tags = [];
+		var lol_div = document.getElementById("lol_tags");
+		for (var i = 0; i < lol_div.children.length; i++)
+		{
+			var tag_name = getDescendentByTagAndClassName(lol_div.children[i], "input", "name").value;
+			var tag_color = getDescendentByTagAndClassName(lol_div.children[i], "input", "color").value;
+			tags[i] = {name: tag_name, color: tag_color};
+		}
+		GM_setValue('lolTags', JSON.stringify(tags));
 	}
 
 	function handleFilterBox(e) {
@@ -757,7 +850,7 @@
 		// Build the lol tags
 		var divLolTags = document.createElement('div');
 		divLolTags.setAttribute('id','lol_tags');
-	    fs.appendChild(divLolTags);
+		fs.appendChild(divLolTags);
 
 	    // Add lol tag add button
 	    var a = document.createElement('a');
@@ -785,18 +878,18 @@
 		container.appendChild(div);
 
 		// Add all of the tags to the dialog
-	    for (var i = 0; i < tags.length; i++)
-	    {
-	    	addLolTag(tags[i].name, tags[i].color);
-	    }
+		for (var i = 0; i < tags.length; i++)
+		{
+			addLolTag(tags[i].name, tags[i].color);
+		}
 	}
 
-	
+
 
 	/* MAIN
 	*/
-	
-	// Add large lol link button at the top of the chatty 
+
+	// Add large lol link button at the top of the chatty
 	if (String(location.href).indexOf('.com/chatty') != -1)
 	{
 		// add link to lol'd above the comments
@@ -819,7 +912,7 @@
 			divLol.innerHTML = '[ L O L ` d]';
 			divCommentstools.appendChild(divLol);
 		}
-		
+
 		// Read lol-counts from the GM store
 		lolCounts = { };
 		try
@@ -829,7 +922,7 @@
 		catch (ex)
 		{
 			// Log error
-			GM_log(ex.description);
+			console.log(ex.description);
 		}
 
 		// Only go to the well for updated lol counts every minute
@@ -850,8 +943,8 @@
 			}
 		}
 
-		// Check date 4.1? 
-		var d = new Date(); 
+		// Check date 4.1?
+		var d = new Date();
 		if ((d.getDate() == 1) && (d.getMonth() == 3) && (GM_getValue('lol-4pr1lf00z', '') != d.getYear()))
 		{
 			var a1 = document.createElement('div');
@@ -859,30 +952,35 @@
 			a1.style.display = 'none';
 			document.getElementsByTagName('body')[0].appendChild(a1);
 			GM_setValue('lol-4pr1lf00z', d.getYear());
-		}		
+		}
 	}
-	
+
 	// Install [lol] buttons to any page with a div.commentsblock
 	if (typeof(getElementByClassName(document, 'div', 'commentsblock')) != 'undefined')
 	{
-		installLolButtons(); 
+		installLolButtons();
 	}
 
 	// Create event handler to watch for DOMNode changes
-	document.addEventListener('DOMNodeInserted', function(e) 
+	new MutationObserver(function(mutations)
 	{
-		if (e.target.className.indexOf('fullpost') !== -1)
+		for (var mutation of mutations)
 		{
-			installLolButtons();
+			if (mutation.type != 'childList') {
+				continue;
+			}
+
+			for (var node of mutation.addedNodes)
+			{
+				if (node.classList.contains('fullpost'))
+				{
+					installLolButtons();
+					return;
+				}
+			}
 		}
-		
-		if (e.target.id.indexOf('root_') !== -1)
-		{
-			installLolButtons(); 
-		}
-	}, false);
+	}).observe(document.body, { childList: true, subtree: true });
 
 	// log execution time
-	tw_log(location.href + ' / ' + (getTime() - scriptStartTime) + 'ms');
-	
+	// console.log(location.href + ' / ' + (getTime() - scriptStartTime) + 'ms');
 })();
