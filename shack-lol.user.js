@@ -193,7 +193,7 @@
 	var lolCountSettingOptions = new Array('All','Limited','None');
 	var lolCountSetting = GM_getValue('lolCountSetting','Limited');
 
-	var tags = JSON.parse(GM_getValue('lolTags', '[{"name": "lol", "color": "#f80"}, {"name": "inf", "color": "#09c"}, {"name": "unf", "color": "#f00"}, {"name": "tag", "color": "#7b2"}, {"name": "wtf", "color": "#c000c0"}, {"name": "ugh", "color": "#080"}]'));
+	var tags = JSON.parse(GM_getValue('lolTags', '[{"name": "lol", "color": "#f80"}, {"name": "inf", "color": "#09c"}, {"name": "unf", "color": "#f00"}, {"name": "tag", "color": "#7b2"}, {"name": "wtf", "color": "#c000c0"}]'));
 
 	var lolCollapseUghs = GM_getValue('lolCollapseUghs', '3');
 
