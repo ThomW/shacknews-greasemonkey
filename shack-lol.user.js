@@ -8,7 +8,7 @@
 // @exclude /https?://bananas.shacknews.com/*/
 // @exclude /https?://*.gmodules.com/*/
 // @exclude /https?://*.facebook.com/*/
-// @version 1.5
+// @version 1.6
 // @grant GM_addStyle
 // @grant GM_getValue
 // @grant GM_setValue
@@ -173,6 +173,8 @@
 		* Added the ability to get lolers
 		* Fixed ugh collapsing for large amounts of ughs
 		* Removed use of unsafeWindow
+	2014-11-28
+		* Added ability to click lolers to have it remove the list of lolers from the post
 */
 
 (function() {
@@ -430,7 +432,6 @@
 				catch (error)
 				{
 					console.log(error);
-					alert('Error parsing lolcount.');
 				}
 			}
 		});
@@ -463,11 +464,8 @@
 		divTaggers = document.getElementById('taggers_' + id);
 		if (divTaggers)
 		{
-			for (var i = 0; i < divTaggers.childNodes.length; i++) {
-				while (divTaggers.childNodes[i].hasChildNodes()) {
-					divTaggers.childNodes[i].removeChild(divTaggers.childNodes[i].lastChild);
-				}
-			}
+			divTaggers.parentNode.removeChild(divTaggers);
+			return;
 		}
 		else {
 			divTaggers = document.createElement('div');
