@@ -48,7 +48,13 @@
 	function addCommas(nStr) { nStr += ''; x = nStr.split('.'); x1 = x[0]; x2 = x.length > 1 ? '.' + x[1] : ''; var rgx = /(\d+)(\d{3})/; while (rgx.test(x1)) { x1 = x1.replace(rgx, '$1' + ',' + '$2'); } return x1 + x2; }
 
 	GM_addStyle(
-		'#user .user { position: relative; cursor: pointer; }'
+		''
+		// Make sure the dropdown menu can break outside the box
+		+ 'body .in, .base-level { overflow: visible !important; }'
+		
+		+ '.userDropdownButton { width: auto; -webkit-user-select: none; background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB2ZXJzaW9uPSIxLjEiIGlkPSJMYXllcl8xIiB4PSIwcHgiIHk9IjBweCIgd2lkdGg9IjUxMnB4IiBoZWlnaHQ9IjUxMnB4IiB2aWV3Qm94PSIwIDAgNTEyIDUxMiIgZW5hYmxlLWJhY2tncm91bmQ9Im5ldyAwIDAgNTEyIDUxMiIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+CjxnIHN0eWxlPSJmaWxsOiAjZmZmZmZmIj4KCTxwYXRoIGQ9Ik0yNTguNzQ0IDI5My4yMTRjNzAuODk1IDAgMTI4LjM2NS01Ny40NzIgMTI4LjM2NS0xMjguMzY2YzAtNzAuODk2LTU3LjQ3My0xMjguMzY3LTEyOC4zNjUtMTI4LjM2NyBjLTcwLjg5NiAwLTEyOC4zNjggNTcuNDcyLTEyOC4zNjggMTI4LjM2N0MxMzAuMzc3IDIzNS43IDE4Ny44IDI5My4yIDI1OC43IDI5My4yMTR6Ii8+Cgk8cGF0aCBkPSJNMzcxLjUzMyAzMjIuNDMySDE0MC40NjdjLTc3LjU3NyAwLTE0MC40NjYgNjIuOTA5LTE0MC40NjYgMTQwLjQ4N3YxMi42MDFoNTEydi0xMi42MDEgQzUxMiAzODUuMyA0NDkuMSAzMjIuNCAzNzEuNSAzMjIuNDMyeiIvPgo8L2c+Cjwvc3ZnPgo=") !important; background-size: 50% !important; background-repeat: no-repeat !important; background-position: 50% !important; }'
+		
+		+ '#user .user { position: relative; cursor: pointer; }'
 		+ '#user .user .hidden { display: none; }'
 		+ 'span.author { position: relative !important; }'
 		+ 'span.author span.user { cursor: pointer; }'
@@ -86,6 +92,12 @@
 			return '';
 		}
 	}
+	
+	function isLoggedIn()
+	{
+		return findUsername().length > 0;
+	}
+	
 	
 	function createTextWrapper(tag, text,url)
 	{	
@@ -398,6 +410,20 @@
 			}
 		} 
 	}
+	
+	// Add new user menu to header
+	if (isLoggedIn()) {
+		var header = document.getElementById('header-new');
+		var hasCookies = getElementByClassName(header, 'div', 'has-cookie');
+		if (typeof(hasCookies) != 'undefined') {
+			var aUser = document.createElement('a');
+			aUser.setAttribute('id', 'userDropdownTrigger');
+			aUser.className = 'button userDropdownButton';
+			aUser.innerHTML = '&nbsp;';
+			// Insert the new element before the Inbox button
+			hasCookies.insertBefore(aUser, getElementByClassName(hasCookies, 'a', 'inbox'));
+		}
+	}
 
 	// Add catch-all event handlers for creating user dropdown menus 
 	document.addEventListener('click', function(e)
@@ -427,7 +453,7 @@
 		}
 		
 		// User name clicked
-		else if ((t.tagName == 'A') && (t.id == 'user_posts'))
+		else if ((t.tagName == 'A') && (t.id == 'userDropdownTrigger'))
 		{
 			e.preventDefault();
 			e.stopPropagation();
@@ -452,7 +478,7 @@
 			*/
 			displayUserMenu(t, t.innerHTML, 'You');
 		}
-	}, false); 
+	}, false);	
 
 	// log execution time
 	tw_log(location.href + ' / ' + (getTime() - scriptStartTime) + 'ms');
